@@ -12,6 +12,10 @@ class LLMWrapper:
         elif self.llm_type == 'ollama':
             self.base_url = self.llm_config.get('base_url', 'http://localhost:11434')
             self.model_name = self.llm_config.get('model_name', 'your_model_name')
+        elif self.llm_type == 'custom_openai':
+            self.base_url = self.llm_config.get('base_url')
+            self.api_key = self.llm_config.get('api_key')
+            self.model_id = self.llm_config.get('model_id')
         else:
             raise ValueError(f"Unsupported LLM type: {self.llm_type}")
 
@@ -31,6 +35,8 @@ class LLMWrapper:
             return response['choices'][0]['text'].strip()
         elif self.llm_type == 'ollama':
             return self._ollama_generate(prompt, **kwargs)
+        elif self.llm_type == 'custom_openai':
+            return self._custom_openai_generate(prompt, **kwargs)
         else:
             raise ValueError(f"Unsupported LLM type: {self.llm_type}")
 
@@ -51,6 +57,25 @@ class LLMWrapper:
             raise Exception(f"Ollama API request failed with status {response.status_code}: {response.text}")
         text = ''.join(json.loads(line)['response'] for line in response.iter_lines() if line)
         return text.strip()
+
+    def _custom_openai_generate(self, prompt, **kwargs):
+        url = f"{self.base_url}/v1/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": self.model_id,
+            "prompt": prompt,
+            "max_tokens": kwargs.get('max_tokens', self.llm_config.get('max_tokens', 1024)),
+            "temperature": kwargs.get('temperature', self.llm_config.get('temperature', 0.7)),
+            "top_p": kwargs.get('top_p', self.llm_config.get('top_p', 0.9)),
+            "stop": kwargs.get('stop', self.llm_config.get('stop', [])),
+        }
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code != 200:
+            raise Exception(f"Custom OpenAI API request failed with status {response.status_code}: {response.text}")
+        return response.json()['choices'][0]['text'].strip()
 
     def _prepare_llama_kwargs(self, kwargs):
         llama_kwargs = {

@@ -1,5 +1,11 @@
 # llm_config.py
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 LLM_TYPE = "ollama"  # Options: 'llama_cpp', 'ollama'
 
 # LLM settings for llama_cpp
@@ -23,7 +29,7 @@ LLM_CONFIG_LLAMA_CPP = {
 LLM_CONFIG_OLLAMA = {
     "llm_type": "ollama",
     "base_url": "http://localhost:11434",  # default Ollama server URL
-    "model_name": "ollama model name",  # Replace with your Ollama model name
+    "model_name": "gemma2:9b-instruct-q5_K_M",  # Replace with your Ollama model name
     "temperature": 0.7,
     "top_p": 0.9,
     "n_ctx": 20000,  # context size
@@ -31,9 +37,30 @@ LLM_CONFIG_OLLAMA = {
 }
 
 def get_llm_config():
-    if LLM_TYPE == "llama_cpp":
-        return LLM_CONFIG_LLAMA_CPP
-    elif LLM_TYPE == "ollama":
-        return LLM_CONFIG_OLLAMA
-    else:
-        raise ValueError(f"Invalid LLM_TYPE: {LLM_TYPE}")
+    """
+    Returns the configuration for the LLM.
+    Loads sensitive information from environment variables.
+    """
+    return {
+        "llm_type": "custom_openai",
+        
+        # Load sensitive data from environment variables
+        "base_url": os.getenv("LLM_BASE_URL"),
+        "api_key": os.getenv("LLM_API_KEY"),
+        "model_id": os.getenv("LLM_MODEL_ID"),
+        
+        # General LLM parameters
+        "temperature": float(os.getenv("LLM_TEMPERATURE", "0.7")),
+        "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "1024")),
+        "top_p": float(os.getenv("LLM_TOP_P", "0.9")),
+        "stop": os.getenv("LLM_STOP", "").split(",") if os.getenv("LLM_STOP") else [],
+        
+        # Llama.cpp specific settings (if using llama_cpp)
+        "model_path": "path/to/your/model.gguf",
+        "n_ctx": 2048,
+        "n_gpu_layers": 0,
+        "n_threads": 8,
+        
+        # Ollama specific settings (if using ollama)
+        "model_name": "your_model_name",
+    }
