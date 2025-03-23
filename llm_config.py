@@ -41,8 +41,12 @@ def get_llm_config():
     Returns the configuration for the LLM.
     Loads sensitive information from environment variables.
     """
-    return {
-        "llm_type": "custom_openai",
+    if LLM_TYPE == "llama_cpp":
+        return LLM_CONFIG_LLAMA_CPP
+    elif LLM_TYPE == "ollama":
+        return LLM_CONFIG_OLLAMA
+    elif LLM_TYPE == "custom_openai":
+        return {"llm_type": "custom_openai",
         
         # Load sensitive data from environment variables
         "base_url": os.getenv("LLM_BASE_URL"),
@@ -64,3 +68,5 @@ def get_llm_config():
         # Ollama specific settings (if using ollama)
         "model_name": "your_model_name",
     }
+    else:
+        raise ValueError(f"Invalid LLM_TYPE: {LLM_TYPE}")
